@@ -1,0 +1,55 @@
+#libraries
+library(Seurat)
+library(SeuratWrappers)
+library(patchwork)
+library(dplyr)
+
+#create seurat object
+xeno76_ctrl <- CreateSeuratObject(counts = xeno76_ctrl.data, project = "xeno76", min.cells = 3, min.features = 200)
+xeno76_cis <- CreateSeuratObject(counts = xeno76_cis.data, project = "xeno76", min.cells = 3, min.features = 200)
+xeno76_cr_ctrl <- CreateSeuratObject(counts = xeno76_cr_ctrl.data, project = "xeno76", min.cells = 3, min.features = 200)
+xeno76_cr_cis <- CreateSeuratObject(counts = xeno76_cr_cis.data, project = "xeno76", min.cells = 3, min.features = 200)
+xeno76_ctrl@meta.data$sample <- "xeno76_ctrl"
+xeno76_cis@meta.data$sample <- "xeno76_cis"
+xeno76_cr_ctrl@meta.data$sample <- "xeno76_cr_ctrl"
+xeno76_cr_cis@meta.data$sample <- "xeno76_cr_cis"
+
+#basic QC
+xeno76_ctrl[["percent.mt"]] <- PercentageFeatureSet(xeno76_ctrl, pattern = "^MT-")
+xeno76_cis[["percent.mt"]] <- PercentageFeatureSet(xeno76_cis, pattern = "^MT-")
+xeno76_cr_ctrl[["percent.mt"]] <- PercentageFeatureSet(xeno76_cr_ctrl, pattern = "^MT-")
+xeno76_cr_cis[["percent.mt"]] <- PercentageFeatureSet(xeno76_cr_cis, pattern = "^MT-")
+xeno76_ctrl <- subset(xeno76_ctrl, subset = nFeature_RNA >= 200 & nFeature_RNA <= 9000 & percent.mt <= 50)
+xeno76_cis <- subset(xeno76_cis, subset = nFeature_RNA >= 200 & nFeature_RNA <= 9000 & percent.mt <= 50)
+xeno76_cr_ctrl <- subset(xeno76_cr_ctrl, subset = nFeature_RNA >= 200 & nFeature_RNA <= 9000 & percent.mt <= 50)
+xeno76_cr_cis <- subset(xeno76_cr_cis, subset = nFeature_RNA >= 200 & nFeature_RNA <= 9000 & percent.mt <= 50)
+
+#clustering
+all.genes <- rownames(xeno76_ctrl)
+xeno76_ctrl <- NormalizeData(xeno76_ctrl) %>% FindVariableFeatures() %>% ScaleData(features = all.genes)
+xeno76_ctrl <- RunPCA(xeno76_ctrl, features = VariableFeatures(object = xeno76_ctrl))
+xeno76_ctrl <- FindNeighbors(xeno76_ctrl, dims = 1:20) %>% FindClusters(resolution = 1) %>% RunUMAP(dims = 1:20)
+
+all.genes <- rownames(xeno76_cis)
+xeno76_cis <- NormalizeData(xeno76_cis) %>% FindVariableFeatures() %>% ScaleData(features = all.genes)
+xeno76_cis <- RunPCA(xeno76_cis, features = VariableFeatures(object = xeno76_cis))
+xeno76_cis <- FindNeighbors(xeno76_cis, dims = 1:20) %>% FindClusters(resolution = 1) %>% RunUMAP(dims = 1:20)
+
+all.genes <- rownames(xeno76_cr_ctrl)
+xeno76_cr_ctrl <- NormalizeData(xeno76_cr_ctrl) %>% FindVariableFeatures() %>% ScaleData(features = all.genes)
+xeno76_cr_ctrl <- RunPCA(xeno76_cr_ctrl, features = VariableFeatures(object = xeno76_cr_ctrl))
+xeno76_cr_ctrl <- FindNeighbors(xeno76_cr_ctrl, dims = 1:20) %>% FindClusters(resolution = 1) %>% RunUMAP(dims = 1:20)
+
+all.genes <- rownames(xeno76_cr_cis)
+xeno76_cr_cis <- NormalizeData(xeno76_cr_cis) %>% FindVariableFeatures() %>% ScaleData(features = all.genes)
+xeno76_cr_cis <- RunPCA(xeno76_cr_cis, features = VariableFeatures(object = xeno76_cr_cis))
+xeno76_cr_cis <- FindNeighbors(xeno76_cr_cis, dims = 1:20) %>% FindClusters(resolution = 1) %>% RunUMAP(dims = 1:20)
+
+xeno76.combined <- merge(xeno76_ctrl, y = c(xeno76_cis, xeno76_cr_ctrl, xeno76_cr_cis), 
+                         add.cell.ids = c("xeno76_ctrl", "xeno76_cis", "xeno76_cr_ctrl", "xeno76_cr_cis"), project = "xeno76")
+
+#batch effect removal and clustering
+xeno76.combined_fastmnn_reintegrated <- NormalizeData(xeno76.combined) %>% FindVariableFeatures()
+xeno76.combined_fastmnn_reintegrated <- RunFastMNN(object.list = SplitObject(xeno76.combined_fastmnn_reintegrated, split.by = "sample"), d = 50)
+xeno76.combined_fastmnn_reintegrated <- RunUMAP(xeno76.combined_fastmnn_reintegrated, reduction = "mnn", dims = 1:20)
+xeno76.combined_fastmnn_reintegrated <- FindNeighbors(xeno76.combined_fastmnn_reintegrated, reduction = "mnn", dims = 1:20) %>% FindClusters(resolution = 1)
