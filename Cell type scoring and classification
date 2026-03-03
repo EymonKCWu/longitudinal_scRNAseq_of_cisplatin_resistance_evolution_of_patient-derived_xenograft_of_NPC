@@ -1,0 +1,15 @@
+library(UCell)
+score.set.epithelial <- list(
+  PB = c("UBE2C","CENPA","SPC25","PBK","AURKB","PIMREG","ASPM","PLK1","GTSE1","HJURP"),
+  AB = c("IGKV3-20","IGHG1","IGKC","IGKV4-1","MAP3K8","MYBPC1","TCIM","POLR2J3·1","COL7A1","FTX"),
+  MPB = c("POSTN","MMP10","ISLR","CYYR1","G0S2","EDNRA","DLK2","KISS1","PDPN","FLRT3"),
+  Goblet = c("DMBT1","C6orf58","S100A1","LPO","STATH","HP","PRR4","PRH2","PRB3","CRISP3"),
+  Ciliated = c("CACNG6","CFAP157","CDHR4","LRRC74B","AC113349·1","TCTEX1D1","DNAI1","CFAP100","MRLN","CATSPERD"),
+  Ionocyte = c("BSND","AC012499·1","ASCL3","SFTPB","LINC01187","CLCNKB","ATP6V1G3","DGKI","ATP6V0D2","GABRB2"),
+  SPB_Goblet_Transition = c("LYPD2","MUC5AC","SCGB1A1","CEACAM5","CYP2F1","S100P","SLURP2","MSMB","FER1L6","C15orf48"),
+  SPB = c("CLCA4","SERPINB4","SERPINB13","SPON2","S100A8","SERPINB3","CHP2","LY6D","LYPD3","UPK1B", "KRT16",	"CEBPD",	"CDKN1A",	"PGM2"),
+  SPB1 = c("LY6D", "S100A8", "KRT6A", "S100A9", "GSTA1", "MEG3", "CTNNBIP1"),
+  Basal = c("SPIB","CCL20","NTRK2","CXCL10","C1QTNF1","BCL2A1","NREP","TEAD2","LINC00839","HOXA10"))
+
+xeno76.combined_fastmnn_reintegrated.singlet <- AddModuleScore_UCell(xeno76.combined_fastmnn_reintegrated.singlet, 
+                                                                                  features = score.set.epithelial)
