@@ -1,0 +1,98 @@
+library(DoubletFinder)
+
+#xeno76_ctrl
+pc.num <- 1:20
+DoubletRate = 0.05 
+sweep.res <- paramSweep(xeno76_ctrl, PCs = pc.num, sct = F) 
+sweep.stats <- summarizeSweep(sweep.res, GT = FALSE)
+bcmvn <- find.pK(sweep.stats)
+pK_bcmvn <- bcmvn$pK[which.max(bcmvn$BCmetric)] %>% as.character() %>% as.numeric()
+homotypic.prop <- modelHomotypic(xeno76.combined_fastmnn_reintegrated_split[["xeno76_ctrl"]]$seurat_clusters)   
+nExp_poi <- round(DoubletRate * ncol(xeno76.combined_fastmnn_reintegrated_split[["xeno76_ctrl"]]))
+nExp_poi.adj <- round(nExp_poi * (1 - homotypic.prop))
+xeno76_ctrl <- doubletFinder(xeno76_ctrl, 
+                                  PCs = pc.num,
+                                  pK = pK_bcmvn, 
+                                  nExp = nExp_poi.adj, 
+                                  sct = F)
+df <- xeno76_ctrl@meta.data
+row_names <- rownames(df)
+rownames(df) <- paste("xeno76_ctrl", rownames(df), sep = "_")
+classification_cols <- grep("DF.classifications", colnames(df), value = TRUE)
+xeno76_ctrl.doublet_result <- df[, classification_cols, drop = FALSE]
+
+#xeno76_cis
+pc.num <- 1:20
+DoubletRate = 0.05
+sweep.res <- paramSweep(xeno76_cis, PCs = pc.num, sct = F) 
+sweep.stats <- summarizeSweep(sweep.res, GT = FALSE)
+bcmvn <- find.pK(sweep.stats)
+pK_bcmvn <- bcmvn$pK[which.max(bcmvn$BCmetric)] %>% as.character() %>% as.numeric()
+homotypic.prop <- modelHomotypic(xeno76.combined_fastmnn_reintegrated_split[["xeno76_cis"]]$seurat_clusters)
+nExp_poi <- round(DoubletRate * ncol(xeno76.combined_fastmnn_reintegrated_split[["xeno76_cis"]]))
+nExp_poi.adj <- round(nExp_poi * (1 - homotypic.prop))
+xeno76_cis <- doubletFinder(xeno76_cis, 
+                            PCs = pc.num,
+                            pK = pK_bcmvn, 
+                            nExp = nExp_poi.adj, 
+                            sct = F)
+df <- xeno76_cis@meta.data
+row_names <- rownames(df)
+rownames(df) <- paste("xeno76_cis", rownames(df), sep = "_")
+classification_cols <- grep("DF.classifications", colnames(df), value = TRUE)
+xeno76_cis.doublet_result <- df[, classification_cols, drop = FALSE]
+
+#xeno76_cr_ctrl
+pc.num <- 1:20
+DoubletRate = 0.05
+sweep.res <- paramSweep(xeno76_cr_ctrl, PCs = pc.num, sct = F) # sct也可以选择T
+sweep.stats <- summarizeSweep(sweep.res, GT = FALSE)
+bcmvn <- find.pK(sweep.stats)
+pK_bcmvn <- bcmvn$pK[which.max(bcmvn$BCmetric)] %>% as.character() %>% as.numeric()
+homotypic.prop <- modelHomotypic(xeno76.combined_fastmnn_reintegrated_split[["xeno76_cr_ctrl"]]$seurat_clusters)
+nExp_poi <- round(DoubletRate * ncol(xeno76.combined_fastmnn_reintegrated_split[["xeno76_cr_ctrl"]]))
+nExp_poi.adj <- round(nExp_poi * (1 - homotypic.prop))
+xeno76_cr_ctrl <- doubletFinder(xeno76_cr_ctrl, 
+                                PCs = pc.num,
+                                pK = pK_bcmvn, 
+                                nExp = nExp_poi.adj, 
+                                sct = F)
+df <- xeno76_cr_ctrl@meta.data
+row_names <- rownames(df)
+rownames(df) <- paste("xeno76_cr_ctrl", rownames(df), sep = "_")
+classification_cols <- grep("DF.classifications", colnames(df), value = TRUE)
+xeno76_cr_ctrl.doublet_result <- df[, classification_cols, drop = FALSE]
+
+#xeno76_cr_cis
+pc.num <- 1:20
+DoubletRate = 0.05
+sweep.res <- paramSweep(xeno76_cr_cis, PCs = pc.num, sct = F)
+sweep.stats <- summarizeSweep(sweep.res, GT = FALSE)
+bcmvn <- find.pK(sweep.stats)
+pK_bcmvn <- bcmvn$pK[which.max(bcmvn$BCmetric)] %>% as.character() %>% as.numeric()
+homotypic.prop <- modelHomotypic(xeno76.combined_fastmnn_reintegrated_split[["xeno76_cr_cis"]]$seurat_clusters)
+nExp_poi <- round(DoubletRate * ncol(xeno76.combined_fastmnn_reintegrated_split[["xeno76_cr_cis"]]))
+nExp_poi.adj <- round(nExp_poi * (1 - homotypic.prop))
+xeno76_cr_cis <- doubletFinder(xeno76_cr_cis, 
+                               PCs = pc.num,
+                               pK = pK_bcmvn, 
+                               nExp = nExp_poi.adj, 
+                               sct = F)
+df <- xeno76_cr_cis@meta.data
+row_names <- rownames(df)
+rownames(df) <- paste("xeno76_cr_cis", rownames(df), sep = "_")
+classification_cols <- grep("DF.classifications", colnames(df), value = TRUE)
+xeno76_cr_cis.doublet_result <- df[, classification_cols, drop = FALSE]
+
+#combine all doublet results to add metadata
+colnames(xeno76_ctrl.doublet_result) <- "DF.classifications"
+colnames(xeno76_cis.doublet_result) <- "DF.classifications"
+colnames(xeno76_cr_ctrl.doublet_result) <- "DF.classifications"
+colnames(xeno76_cr_cis.doublet_result) <- "DF.classifications"
+xeno76.doublet_result <- rbind(xeno76_ctrl.doublet_result, xeno76_cis.doublet_result, 
+                               xeno76_cr_ctrl.doublet_result, xeno76_cr_cis.doublet_result)
+xeno76.combined_fastmnn_reintegrated <- AddMetaData(xeno76.combined_fastmnn_reintegrated, metadata = xeno76.doublet_result)
+
+#subset singlets
+Idents(xeno76.combined_fastmnn_reintegrated) <- "DF.classifications"
+xeno76.combined_fastmnn_reintegrated.singlet <- subset(xeno76.combined_fastmnn_reintegrated, idents = "Singlet")
